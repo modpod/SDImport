@@ -1,7 +1,7 @@
 ﻿using System;
 
 // program starts and asks for input ("arguments")
-Console.WriteLine("Start - \"5\" for 5d, \"4\" for T4i");
+Console.WriteLine("Start - \"E\" for Em5, \"4\" for T4i");
 string argline = Console.ReadLine();
 // start main method with your input
 Main(argline);
@@ -26,7 +26,10 @@ static void Main(string arg = null)
                     // this will call the Process5D() method below, and if it's successful, break out of the switch
                     if (ProcessT4i()) break;
                     else throw new Exception("T4i backup failed");
-                    // 'default' is the case for anything not defined previously, so right now anything other than "5" 
+                // 'default' is the case for anything not defined previously, so right now anything other than "5" 
+                case "E":
+                    if (ProcessEm5()) break;
+                    else throw new Exception("Em5 backup failed");
                 default:
                     Console.WriteLine("Bad argument");
                     break;
@@ -57,7 +60,7 @@ static bool Process5d()
     int filesNum = 0;
     string filesNumString = string.Empty;
     // this is the drive letter of the removable device (sd card, usb stick, etc)
-    string sdRoot = "E:";
+    string sdRoot = "D:";
     // this camera makes numbered folders, starting with 100 - only looking there for now
     int sdDirNum = 100;
     // Path.Combine builds the name of the full directory for me here: E:\DCIM\100EOS5D
@@ -65,7 +68,7 @@ static bool Process5d()
     // this one won't ever change, so we can just define it directly.
     // to do it with like the other one, the equivalent would be Path.Combine("D:", "Photo", "5D")
     // (\ is a special character, so you need to 'escape' it by putting it after another \ when you're defining it like this)
-    string localDir = "D:\\Photo\\5D";
+    string localDir = "C:\\Users\\jasmi\\OneDrive\\Pictures\\Saved Pictures\\5d";
     // this would just make a string "2023-06-12" - we're going to create that directory later
     string todayDir = DateTime.Now.ToString("yyyy-MM-dd");
     // we're going to make copies to the SD card itself and our local directory
@@ -178,9 +181,9 @@ static bool ProcessT4i()
 
     int filesNum = 0;
     string filesNumString = string.Empty;
-    string sdRoot = "E:";
+    string sdRoot = "D:";
     string sdDir = Path.Combine(sdRoot, "DCIM");
-    string localDir = "D:\\Photo\\T4i";
+    string localDir = "C:\\Users\\jasmi\\OneDrive\\Pictures\\Saved Pictures\\T4i";
     string todayDir = DateTime.Now.ToString("yyyy-MM-dd");
     string localTodayDir = Path.Combine(localDir, todayDir);
     string sdTodayDir = Path.Combine(sdRoot, todayDir);
@@ -258,5 +261,118 @@ static bool ProcessT4i()
         ok = false;
     }
 
+    return ok;
+}
+
+
+static bool ProcessEm5()
+{
+    bool ok = false;
+
+    // define initial parameters
+    int filesNum = 0;
+    string filesNumString = string.Empty;
+    // this is the drive letter of the removable device (sd card, usb stick, etc)
+    string sdRoot = "D:";
+    // this camera makes numbered folders, starting with 100 - only looking there for now
+    int sdDirNum = 100;
+    // Path.Combine builds the name of the full directory for me here: E:\DCIM\100EOS5D
+    string sdDir = Path.Combine(sdRoot, "DCIM", "100OLYMP");
+    // this one won't ever change, so we can just define it directly.
+    // to do it with like the other one, the equivalent would be Path.Combine("D:", "Photo", "5D")
+    //D:\DCIM\100OLYMP
+    // (\ is a special character, so you need to 'escape' it by putting it after another \ when you're defining it like this)
+    string localDir = "C:\\Users\\jasmi\\OneDrive\\Pictures\\Saved Pictures\\Em5";
+    // this would just make a string "2023-06-12" - we're going to create that directory later
+    string todayDir = DateTime.Now.ToString("yyyy-MM-dd");
+    // we're going to make copies to the SD card itself and our local directory
+    // so these would be, e.x., "D:\Photo\5D\2023-06-12"
+    string localTodayDir = Path.Combine(localDir, todayDir);
+    string sdTodayDir = Path.Combine(sdRoot, todayDir);
+
+    try
+    {
+        if (Directory.Exists(sdRoot))
+        {
+            if (Directory.Exists(localDir))
+            {
+                // create local dir
+                if (!Directory.Exists(localTodayDir)) Directory.CreateDirectory(localTodayDir);
+
+                // create backup dir on SD card
+                if (!Directory.Exists(sdTodayDir)) Directory.CreateDirectory(sdTodayDir);
+
+                foreach (string sdDirFile in Directory.GetFiles(sdDir))
+                {
+                    // increment number of files copied
+                    filesNum++;
+
+                    // this just adds spaces to the console output lines so the numbers align
+                    if (filesNum < 10) filesNumString = filesNum.ToString() + "   ";
+                    else if (filesNum < 100) filesNumString = filesNum.ToString() + "  ";
+                    else if (filesNum < 1000) filesNumString = filesNum.ToString() + " ";
+                    else filesNumString = filesNum.ToString();
+
+                    // get the file extension of the file to copy 
+                    string sdDirFileExtension = sdDirFile.Substring(sdDirFile.LastIndexOf('.'), 4);
+
+                    // get the rest of the file name
+                    string sdDirFilename = Path.GetFileName(sdDirFile).Replace(sdDirFileExtension, string.Empty);
+
+                    // get the time it was created as a string in the format _yyyy-MM-dd_hh.mm.ss, yyyy = four-digit year, etc
+                    string sdDirFileTimestamp = File.GetCreationTime(sdDirFile).ToString("_yyyy-MM-dd_hh.mm.ss");
+
+                    // define new folders inside sdTodayDir and localBackupExtensionDir, one for each file extension found
+                    string sdBackupExtensionDir = Path.Combine(sdTodayDir, sdDirFileExtension.Replace(".", ""));
+                    string localBackupExtensionDir = Path.Combine(localTodayDir, sdDirFileExtension.Replace(".", ""));
+
+                    // if those folders don't exist, create them
+                    if (!Directory.Exists(sdBackupExtensionDir)) Directory.CreateDirectory(sdBackupExtensionDir);
+                    if (!Directory.Exists(localBackupExtensionDir)) Directory.CreateDirectory(localBackupExtensionDir);
+
+                    // define two file names, one inside each of those folders
+                    // these two files are going to be what we copy to, they don't exist yet
+                    string sdBackupFile = Path.Combine(sdBackupExtensionDir, sdDirFilename + sdDirFileTimestamp + sdDirFileExtension);
+                    string localBackupFile = Path.Combine(localBackupExtensionDir, sdDirFilename + sdDirFileTimestamp + sdDirFileExtension);
+
+                    // if they do exist for some reason, throw an error
+                    if (File.Exists(sdBackupFile)) throw new Exception("File on SD already exists: " + sdBackupFile);
+                    else
+                    {
+                        // copy the file and output what you wrote to the console
+                        File.Copy(sdDirFile, sdBackupFile, true);
+                        Console.WriteLine("     " + sdBackupFile);
+                    }
+
+                    // then for the other one
+                    if (File.Exists(localBackupFile)) throw new Exception("Local file already exists: " + localBackupFile);
+                    else
+                    {
+                        File.Move(sdDirFile, localBackupFile, true);
+                        Console.WriteLine("     " + localBackupFile);
+                    }
+
+                    Console.WriteLine(filesNumString + " OK");
+                    Console.WriteLine();
+                }
+            }
+            else throw new Exception("Local dir not found at " + localDir);
+        }
+        else throw new Exception("Em5 SD card not found at " + sdRoot);
+
+        // if we got to this point, we looped through all the files successfully (otherwise we would have thrown an error and exited the loop)
+        Console.WriteLine("Moved " + filesNum + " files OK");
+        ok = true;
+    }
+    // if we throw an error it gets caught here
+    catch (Exception ex)
+    {
+        // this will output what the error was (or at least where it happened) to the console
+        Console.WriteLine(ex.Message);
+        Console.WriteLine(ex.StackTrace);
+        ok = false;
+    }
+
+    // finally, return whatever our status was
     return ok;
 }
